@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLOWLY – Kundenmanager</title>
+<style>
+:root {
+  --bg:#0b1120;
+  --panel:#131d30;
+  --panel2:#19263b;
+  --text:#f2f5fc;
+  --muted:#8c9bb2;
+  --blue:#648cff;
+  --green:#35c995;
+  --border:#293750;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+}
+header {
+  padding:22px 5%;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.logo {font-size:24px;font-weight:800;letter-spacing:2px}
+.logo span {color:var(--blue)}
+header small {color:var(--muted)}
+main {max-width:1200px;margin:auto;padding:35px 5%}
+h1 {font-size:30px;margin-bottom:8px}
+.subtitle {color:var(--muted);margin-bottom:28px}
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:15px;
+  margin-bottom:30px;
+}
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+}
+.card p {color:var(--muted);margin:0 0 12px}
+.card strong {font-size:29px}
+.toolbar {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+input,select {
+  background:var(--panel2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:12px;
+  outline:none;
+}
+input {min-width:200px}
+button {
+  background:var(--blue);
+  border:0;
+  color:white;
+  padding:12px 17px;
+  border-radius:9px;
+  cursor:pointer;
+  font-weight:700;
+}
+button:hover {opacity:.85}
+.secondary {background:var(--panel2);border:1px solid var(--border)}
+table {width:100%;border-collapse:collapse}
+th,td {
+  text-align:left;
+  padding:15px 12px;
+  border-bottom:1px solid var(--border);
+}
+th {color:var(--muted);font-size:12px}
+.table-wrap {overflow-x:auto}
+.status {
+  padding:6px 9px;
+  border-radius:20px;
+  font-size:12px;
+  background:#263653;
+}
+.status.Neu {color:#83a9ff}
+.status.Kontaktiert {color:#e9c36b}
+.status.Kunde {color:#48d7a2}
+.status.Verloren {color:#ff8888}
+.actions {display:flex;gap:7px;align-items:center}
+.actions button {padding:7px 9px;font-size:12px}
+.empty {text-align:center;padding:35px;color:var(--muted)}
+.modal-bg {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000b;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:25px;
+  width:100%;
+  max-width:430px;
+}
+.modal h2 {margin-top:0}
+.modal input,.modal select {
+  width:100%;
+  margin:8px 0 14px;
+}
+.modal label {font-size:13px;color:var(--muted)}
+.modal-buttons {display:flex;gap:10px}
+.modal-buttons button {flex:1}
+.footer {color:var(--muted);font-size:12px;margin-top:25px}
+@media(max-width:750px) {
+ .stats {grid-template-columns:repeat(2,1fr)}
+ main {padding:25px 4%}
+ header {padding:18px 4%}
+ th,td {padding:12px 9px}
+}
+@media(max-width:420px) {
+ .stats {grid-template-columns:1fr 1fr}
+ .card {padding:13px}
+ .card strong {font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">FLOW<span>LY</span></div>
+  <small>Customer Management System</small>
+</header>
+
+<main>
+  <h1>Dashboard</h1>
+  <div class="subtitle">Willkommen bei FLOWLY. Hier verwaltest du deine Kunden.</div>
+
+  <section class="stats">
+    <div class="card">
+      <p>Alle Kontakte</p>
+      <strong id="total">0</strong>
+    </div>
+    <div class="card">
+      <p>Neue Leads</p>
+      <strong id="new">0</strong>
+    </div>
+    <div class="card">
+      <p>Kunden</p>
+      <strong id="customers">0</strong>
+    </div>
+    <div class="card">
+      <p>Offene Angebote</p>
+      <strong id="open">0</strong>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <input id="search" placeholder="Kunden suchen..." oninput="render()">
+    <button onclick="openModal()">+ Neuer Kontakt</button>
+  </div>
+
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Unternehmen</th>
+          <th>E-Mail</th>
+          <th>Status</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="contacts"></tbody>
+    </table>
+    <div class="empty" id="empty">Noch keine Kontakte vorhanden.</div>
+  </div>
+
+  <div class="footer">
+    FLOWLY CRM · Prototyp 1.0 · Lokale Speicherung
+  </div>
+</main>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2>Neuen Kontakt hinzufügen</h2>
+    <form id="contactForm">
+      <label>Name</label>
+      <input id="name" required maxlength="100" placeholder="Max Mustermann">
+
+      <label>Unternehmen</label>
+      <input id="company" maxlength="100" placeholder="Musterfirma">
+
+      <label>E-Mail</label>
+      <input id="email" type="email" maxlength="150" placeholder="max@beispiel.de">
+
+      <label>Status</label>
+      <select id="status">
+        <option>Neu</option>
+        <option>Kontaktiert</option>
+        <option>Kunde</option>
+        <option>Verloren</option>
+      </select>
+
+      <div class="modal-buttons">
+        <button type="submit">Speichern</button>
+        <button type="button" class="secondary" onclick="closeModal()">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "flowly_contacts_v1";
+let contacts = [];
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  if (Array.isArray(saved)) contacts = saved;
+} catch {
+  contacts = [];
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+}
+
+function openModal() {
+  document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  document.getElementById("contactForm").reset();
+}
+
+document.getElementById("contactForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const contact = {
+    id: crypto.randomUUID(),
+    name: document.getElementById("name").value.trim(),
+    company: document.getElementById("company").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    status: document.getElementById("status").value
+  };
+
+  if (!contact.name) return;
+
+  contacts.push(contact);
+  save();
+  render();
+  closeModal();
+});
+
+function removeContact(id) {
+  if (!confirm("Diesen Kontakt wirklich löschen?")) return;
+  contacts = contacts.filter(c => c.id !== id);
+  save();
+  render();
+}
+
+function changeStatus(id, status) {
+  contacts = contacts.map(c =>
+    c.id === id ? {...c, status} : c
+  );
+  save();
+  render();
+}
+
+function render() {
+  const query = document.getElementById("search").value.toLowerCase();
+
+  document.getElementById("total").textContent = contacts.length;
+  document.getElementById("new").textContent =
+    contacts.filter(c => c.status === "Neu").length;
+  document.getElementById("customers").textContent =
+    contacts.filter(c => c.status === "Kunde").length;
+  document.getElementById("open").textContent =
+    contacts.filter(c => c.status === "Kontaktiert").length;
+
+  const filtered = contacts.filter(c =>
+    [c.name,c.company,c.email].some(v =>
+      (v || "").toLowerCase().includes(query)
+    )
+  );
+
+  const tbody = document.getElementById("contacts");
+  tbody.replaceChildren();
+
+  document.getElementById("empty").style.display =
+    filtered.length ? "none" : "block";
+
+  filtered.forEach(c => {
+    const tr = document.createElement("tr");
+
+    function cell(value) {
+      const td = document.createElement("td");
+      td.textContent = value || "–";
+      return td;
+    }
+
+    tr.append(
+      cell(c.name),
+      cell(c.company),
+      cell(c.email)
+    );
+
+    const statusCell = document.createElement("td");
+    const select = document.createElement("select");
+
+    ["Neu","Kontaktiert","Kunde","Verloren"].forEach(s => {
+      const option = document.createElement("option");
+      option.value = s;
+      option.textContent = s;
+      select.appendChild(option);
+    });
+
+    select.value = c.status;
+    select.className = "status " + c.status;
+    select.addEventListener("change", () =>
+      changeStatus(c.id, select.value)
+    );
+    statusCell.appendChild(select);
+    tr.appendChild(statusCell);
+
+    const actionCell = document.createElement("td");
+    const del = document.createElement("button");
+    del.textContent = "Löschen";
+    del.className = "secondary";
+    del.addEventListener("click", () => removeContact(c.id));
+    actionCell.appendChild(del);
+    tr.appendChild(actionCell);
+
+    tbody.appendChild(tr);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
